@@ -2,12 +2,51 @@ from __future__ import annotations
 
 import enum
 import re
-from enum import Enum
+import struct
+from enum import Enum, IntFlag
 from pathlib import Path
-
-from .events import EventType
+from typing import Optional
 
 DEVICES_PATH = Path('/proc/bus/input/devices')
+HANDLERS_PATH = Path('/dev/input')
+
+
+class Event:
+    """Input event.
+
+    According to Linux kernel documentation, this is the following structure:
+        struct input_event {
+            struct timeval time;
+            unsigned short type;
+            unsigned short code;
+            unsigned int value;
+        };
+    """
+    class Type(IntFlag):
+        """
+        Enum of event types as provided by Linux Kernel.
+        See https://www.kernel.org/doc/html/latest/input/event-codes.html#event-types
+        """
+        EV_SYN = 1 << 0x00  # Event separator
+        EV_KEY = 1 << 0x01  # Key-like devices (e.g. keyboard)
+        EV_REL = 1 << 0x02  # Relative axis value change
+        EV_ABS = 1 << 0x03  # Absolute axis value change
+        EV_MSC = 1 << 0x04  # Misc
+        EV_SW = 1 << 0x05  # Binary state input switch
+        EV_LED = 1 << 0x11  # LEDs control
+        EV_SND = 1 << 0x12  # Send sound
+        EV_REP = 1 << 0x14  # Autorepeating devices
+        EV_FF = 1 << 0x15  # Send force feedback
+        EV_PWR = 1 << 0x16  # Power button / switch input
+        EV_FF_STATUS = 1 << 0x17  # Receive force feedback status
+
+    FORMAT = 'QQHHI'  # 24 bytes long: 2 unsigned long long, 2 unsigned short, 1 unsigned int
+    SIZE = struct.calcsize(FORMAT)
+
+    def __init__(self, type_, code, value) -> None:
+        self._type = type_
+        self.code = code
+        self.value = value
 
 
 class Device():
@@ -38,6 +77,19 @@ class Device():
     SUPPORTED_HANDLERS_RE = [re.compile(handler) for handler in ['event[0-9]+']]
     EV_RE = re.compile('B: EV=([0-9A-Fa-f]+)')
 
+    def capture_events(self, handler: Optional[str] = None):
+        if not handler:
+            handler = self.handlers[0]
+
+        if handler in self.handlers:
+            with open(HANDLERS_PATH / handler, 'rb') as events:
+                while True:
+                    raw_event = events.read(Event.SIZE)
+                    _, _, type_, code, value = struct.unpack(Event.FORMAT, raw_event)
+                    print(type_, code, value)
+        else:
+            raise ValueError(f'Invalid hander {handler} for device {self}')
+
     @classmethod
     def from_raw(cls, raw_dev: list[str]) -> Device:
         """Create a new Device from raw data (read from /proc/bus/input/devices)
@@ -62,8 +114,8 @@ class Device():
                     handlers.extend(supported_handler_re.findall(field))
             elif not type_.value and field.startswith('B:'):  # Bitmaps
                 if match := cls.EV_RE.search(field):
-                    events = EventType(int(match.group(1), base=16))
-                    if events & EventType.EV_KEY and events & EventType.EV_REP:
+                    events = Event.Type(int(match.group(1), base=16))
+                    if events & Event.Type.EV_KEY and events & Event.Type.EV_REP:
                         type_ = cls.Type.KEYBOARD
                     else:
                         type_ = cls.Type.UNSUPPORTED
