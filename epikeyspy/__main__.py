@@ -16,7 +16,10 @@ server_subpar.add_argument('-p', '--port', help='the port to use', type=int, def
 
 args = parser.parse_args()
 
-if args.command == 'client':
-    client_loop(args.server)
-elif args.command == 'server':
-    server_loop(args.port)
+try:
+    if args.command == 'client':
+        client_loop(args.server)
+    elif args.command == 'server':
+        server_loop(args.port)
+except KeyboardInterrupt:
+    pass
