@@ -12,7 +12,7 @@ DEVICES_PATH = Path('/proc/bus/input/devices')
 HANDLERS_PATH = Path('/dev/input')
 
 
-class Device():
+class Device:
     """
     Input device, such as a keyboard, a mouse, etc.
     """
@@ -22,8 +22,9 @@ class Device():
         """
         UNKNOWN = False  # Explicitely set to False (otherwise enum values are True)
 
-        UNSUPPORTED = enum.auto()
         KEYBOARD = enum.auto()
+
+        UNSUPPORTED = enum.auto()
 
         def __str__(self):
             return f'{self.name}'
@@ -36,20 +37,28 @@ class Device():
     def __repr__(self):
         return f"<{self.__class__.__name__} name='{self.name}', type={self.type_}, handlers={self.handlers}>"
 
+    DEVICES_KNOWN_EVENTS = {
+        Type.KEYBOARD: [Event.Type.EV_SYN, Event.Type.EV_KEY, Event.Type.EV_MSC, Event.Type.EV_LED, Event.Type.EV_REP],
+    }
+
     NAME_RE = re.compile('N: Name="(.*)"')
     SUPPORTED_HANDLERS_RE = [re.compile(handler) for handler in ['event[0-9]+']]
     EV_RE = re.compile('B: EV=([0-9A-Fa-f]+)')
 
-    def capture_events(self, handler: Optional[str] = None):
+    def capture_raw_events(self, handler: Optional[str] = None):
         if not handler:
             handler = self.handlers[0]
 
         if handler in self.handlers:
             with open(HANDLERS_PATH / handler, 'rb') as events:
                 while True:
-                    yield Event.from_raw(events.read(Event.SIZE))
+                    yield events.read(Event.SIZE)
         else:
             raise ValueError(f'Invalid hander {handler} for device {self}')
+
+    def capture_events(self, handler: Optional[str] = None):
+        for raw_event in self.capture_raw_events():
+            yield Event.from_raw(raw_event)
 
     @classmethod
     def from_raw(cls, raw_dev: list[str]) -> Device:
@@ -75,9 +84,20 @@ class Device():
                     handlers.extend(supported_handler_re.findall(field))
             elif not type_.value and field.startswith('B:'):  # Bitmaps
                 if match := cls.EV_RE.search(field):
-                    events = Event.Type(int(match.group(1), base=16))
-                    if events & Event.Type.EV_KEY and events & Event.Type.EV_REP:
-                        type_ = cls.Type.KEYBOARD
+                    ev = int(match.group(1), base=16)
+
+                    # Retrieve all events supported by the device
+                    events = []
+                    for type_ in Event.Type:
+                        if bool(ev & (1 << type_.value)):
+                            events.append(type_)
+
+                    # Match events with known devices events
+                    for dev_type, dev_events in cls.DEVICES_KNOWN_EVENTS.items():
+                        # All events from the DEVICES_KNOWN_EVENTS must be supported by the device
+                        if all(event in events for event in dev_events):
+                            type_ = dev_type
+                            break
                     else:
                         type_ = cls.Type.UNSUPPORTED
                 else:
