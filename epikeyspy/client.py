@@ -1,7 +1,7 @@
 from .devices import list_devices, list_supported_devices
 
 
-def client_loop(server: str):
+def client_loop(server: str, raw: bool):
     devices = list_supported_devices()
     for event in devices[0].capture_events():
         print(event)
