@@ -1,3 +1,4 @@
+import sys
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 
 from .client import client_loop
@@ -45,15 +46,14 @@ listdev_subpar = subparsers.add_parser('list-devices',
 args = parser.parse_args()
 
 if args.command == 'client':
-    try:
-        client_loop(args.device, args.server, args.raw)
-    except KeyboardInterrupt:
-        pass
+    client_loop(args.device, args.server, args.raw)
 elif args.command == 'server':
     server_loop(args.address, args.port)
 elif args.command == 'list-devices':
     devices = list_supported_devices()
     if not devices:
-        print('No supported device found')
+        print('No supported device found', file=sys.stderr)
     else:
-        print(f'{devices[0]} (default)')
+        print(f'[0] {devices[0]} (default)')
+        for i, device in enumerate(devices[1:], 1):
+            print(f'[{i}] {device}')

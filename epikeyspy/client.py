@@ -1,4 +1,5 @@
 import sys
+import time
 from http.client import HTTPConnection
 from pickle import dumps
 from urllib.parse import urlparse
@@ -16,11 +17,18 @@ def client_loop(dev_id: int, server: str, raw: bool):
     events = device.capture_raw_events() if raw else device.capture_events()
     urlp = urlparse('//' + server)
 
-    try:
-        for event in events:
-            conn = HTTPConnection(urlp.hostname, urlp.port)
+    conn = HTTPConnection(urlp.hostname, urlp.port)
+    while True:
+        try:
+            conn.connect()
+            print('Connected to server')
+        except ConnectionRefusedError:
+            print('Unable to connect to server', file=sys.stderr)
+            time.sleep(1)
+            continue
 
-            try:
+        try:
+            for event in events:
                 if raw:
                     conn.request('POST', '/', body=event, headers={'data-format': 'raw'})
                 else:
@@ -29,7 +37,8 @@ def client_loop(dev_id: int, server: str, raw: bool):
                 resp = conn.getresponse()
                 if resp.status >= 400:
                     raise Exception('Something went wrong')
-            except ConnectionRefusedError:
-                print('Warning: unable to send data to server')
-    except ConnectionResetError:
-        pass
+        except KeyboardInterrupt:
+            conn.close()
+            break
+        except ConnectionResetError:
+            print('Warning: Connection to server has been lost. Retrying to connect', file=sys.stderr)
