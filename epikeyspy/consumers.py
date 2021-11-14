@@ -1,10 +1,11 @@
 """
 Define your own consumers function here and add them to the `_consumers_` list.
+See below for consumers examples.
 """
 
 from .events import Event, EventKey
 
-CONSUMERS = ['multiple_keys']
+CONSUMERS = []
 
 
 def print_keys(event: Event) -> None:

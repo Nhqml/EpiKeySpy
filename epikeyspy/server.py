@@ -39,9 +39,6 @@ class KeyloggerHTTPRequestHandler(BaseHTTPRequestHandler):
 
     @classmethod
     def add_consumer(cls, consumer):
-        if not isfunction(consumer) or len(inspect.signature(consumer).parameters) != 1:
-            raise Warning(f"'{consumer.__name__}' is not a valid consumer function")
-
         cls.__consumers.append(consumer)
 
 
