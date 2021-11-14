@@ -34,6 +34,9 @@ class Device:
         self.type_ = type_
         self.handlers = handlers
 
+    def __str__(self):
+        return f'{self.type_.name.title()} - {self.name}'
+
     def __repr__(self):
         return f"<{self.__class__.__name__} name='{self.name}', type={self.type_}, handlers={self.handlers}>"
 
