@@ -5,7 +5,7 @@ See below for consumers examples.
 
 from .events import Event, EventKey
 
-CONSUMERS = []
+CONSUMERS: list[str] = []
 
 
 def print_keys(event: Event) -> None:

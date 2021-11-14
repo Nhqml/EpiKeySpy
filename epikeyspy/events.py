@@ -3,6 +3,7 @@ from __future__ import annotations
 import struct
 from datetime import datetime, timedelta
 from enum import IntEnum, IntFlag
+from typing import Union
 
 
 class Event:
@@ -49,8 +50,8 @@ class Event:
         def __str__(self):
             return f'{self.name}'
 
-    def __init__(self, datetime: datetime, type_: Type, code: Union[int, IntEnum], value: Union[int, IntEnum]) -> None:
-        self.datetime = datetime
+    def __init__(self, dt: datetime, type_: Type, code: Union[int, IntEnum], value: Union[int, IntEnum]) -> None:
+        self.datetime = dt
         self.type_ = type_
 
         self.code = code
@@ -60,7 +61,7 @@ class Event:
         return f"<{self.__class__.__name__} datetime={self.datetime}, type={self.type_}, code={self.code}, value={self.value}>"
 
     @classmethod
-    def from_raw(cls, raw_event: list[str]) -> Event:
+    def from_raw(cls, raw_event: bytes) -> Event:
         MAP_TYPE_EVENT = {
             cls.Type.EV_KEY: EventKey,
         }
@@ -72,8 +73,8 @@ class Event:
 
 
 class EventKey(Event):
-    def __init__(self, datetime, type_, code, value):
-        super().__init__(datetime, type_, self.Code(code), self.Value(value))
+    def __init__(self, dt, type_, code, value):
+        super().__init__(dt, type_, self.Code(code), self.Value(value))
 
     class Value(Event.Value):
         RELEASED = 0

