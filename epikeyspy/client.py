@@ -18,27 +18,27 @@ def client_loop(dev_id: int, server: str, raw: bool):
     urlp = urlparse('//' + server)
 
     conn = HTTPConnection(urlp.hostname, urlp.port)
-    while True:
-        try:
-            conn.connect()
-            print('Connected to server')
-        except ConnectionRefusedError:
-            print('Unable to connect to server', file=sys.stderr)
-            time.sleep(1)
-            continue
+    try:
+        while True:
+            try:
+                conn.connect()
+                print('Connected to server')
+            except ConnectionRefusedError:
+                print('Unable to connect to server', file=sys.stderr)
+                time.sleep(1)
+                continue
 
-        try:
-            for event in events:
-                if raw:
-                    conn.request('POST', '/', body=event, headers={'data-format': 'raw'})
-                else:
-                    conn.request('POST', '/', body=dumps(event), headers={'data-format': 'no-raw'})
+            try:
+                for event in events:
+                    if raw:
+                        conn.request('POST', '/', body=event, headers={'data-format': 'raw'})
+                    else:
+                        conn.request('POST', '/', body=dumps(event), headers={'data-format': 'no-raw'})
 
-                resp = conn.getresponse()
-                if resp.status >= 400:
-                    raise Exception('Something went wrong')
-        except KeyboardInterrupt:
-            conn.close()
-            break
-        except ConnectionResetError:
-            print('Warning: Connection to server has been lost. Retrying to connect', file=sys.stderr)
+                    resp = conn.getresponse()
+                    if resp.status >= 400:
+                        raise Exception('Something went wrong')
+            except ConnectionResetError:
+                print('Warning: Connection to server has been lost. Retrying to connect', file=sys.stderr)
+    except KeyboardInterrupt:
+        conn.close()
