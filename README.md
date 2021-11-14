@@ -1,4 +1,4 @@
-# EpiSpyKey
+# EpiKeySpy
 
 *A toy keylogger written in Python*
 
@@ -17,7 +17,18 @@ Download the project and simple run the module:
 # Run the server
 python -m epikeyspy server
 
+# Run the client
 python -m epikeyspy client 127.0.0.1:9999
+```
+
+You can also explore other subcommands/options with:
+
+```bash
+python -m epikeyspy --help
+
+# or
+
+python -m epikeyspy <subcommand> --help
 ```
 
 ## Customize what's printed
